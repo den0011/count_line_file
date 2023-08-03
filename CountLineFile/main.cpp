@@ -42,8 +42,8 @@ int countLinesInFile(const QString& filePath)
     int numThreads = QThreadPool::globalInstance()->maxThreadCount();  // Получаем количество доступных потоков
     qint64 fileSize = file.size();
     qint64 chunkSize = fileSize / numThreads;
-    QVector<QFuture<int>> futures;
-    QVector<QFutureWatcher<int>*> watchers;     // Используем указатель на QFutureWatche (QFutureWatcher нельзя копировать)
+    QVector<QFuture<qint64>> futures;
+    QVector<QFutureWatcher<qint64>*> watchers;     // Используем указатель на QFutureWatche (QFutureWatcher нельзя копировать)
 
     // Обрабатываем каждый чанк в отдельном потоке
     for (int i = 0; i < numThreads; ++i)
@@ -59,7 +59,7 @@ int countLinesInFile(const QString& filePath)
         if (i < numThreads - 1)
             end = findLineEnd(file, end);
 
-        QFuture<int> future = QtConcurrent::run([filePath, start, end]() {
+        QFuture<qint64> future = QtConcurrent::run([filePath, start, end]() -> qint64 {
             QFile file(filePath);
             if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
                 return 0;
@@ -67,7 +67,7 @@ int countLinesInFile(const QString& filePath)
             QTextStream stream(&file);
             stream.seek(start);
 
-            int lineCount = 0;
+            qint64 lineCount = 0;
             while (stream.pos() < end && !stream.atEnd())
             {
                 stream.readLine();
@@ -78,7 +78,7 @@ int countLinesInFile(const QString& filePath)
         });
 
         futures.append(future);
-        QFutureWatcher<int>* watcher = new QFutureWatcher<int>();
+        QFutureWatcher<qint64>* watcher = new QFutureWatcher<qint64>();
         watchers.append(watcher);
         watcher->setFuture(future);
     }
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
         }
     });
 
-    QString filePath = "D:/1.log";
+    QString filePath = "name.txt";
 
     int numLines = countLinesInFile(filePath);
 
